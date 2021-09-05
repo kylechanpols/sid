@@ -12,6 +12,7 @@ This is a project that aims to construct an index of local economic development 
 The model takes a distribution of satellite images, parses them through a U-Net architecture pre-trained to predict on a binary segmentation mask where class 0 points to non-building pixels and class 1 points to building pixels. The model expects a pair of source image and its segmentation mask for training and testing:
 
 <img src="https://drive.google.com/uc?id=12NYztvcf0-WqEKkDSuhys19CF4BYJo7d" alt="Urban" width="256"/>
+
 <img src="https://drive.google.com/uc?id=1VMBxH81uwqydFm4BS1yOdftRTwy00E4R" alt="Rural" width="256"/>
 
 But can take a distribution of unseen images of any dimension to make predictions.
