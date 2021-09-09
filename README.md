@@ -16,7 +16,6 @@ The model takes a distribution of satellite images, parses them through a U-Net 
 <img src="https://drive.google.com/uc?id=1VMBxH81uwqydFm4BS1yOdftRTwy00E4R" alt="Rural" width="256"/>
 
 But it can take a distribution of unseen images of any dimension to make predictions.
-<<<<<<< HEAD
 
 ## A note on model weights
 
