@@ -1,5 +1,6 @@
 import os
 import math
+from keras import backend as K
 
 main_path = "F:/gis/sidv2/"
 
@@ -107,21 +108,25 @@ lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
     decay_rate=0.9)
 
 #MeanIou For use with the Sparse Categorical Cross Entrophy 
-class UpdatedMeanIoU(tf.keras.metrics.MeanIoU):
-  def __init__(self,
-               y_true=None,
-               y_pred=None,
-               num_classes=None,
-               name=None,
-               dtype=None):
-    super(UpdatedMeanIoU, self).__init__(num_classes = num_classes,name=name, dtype=dtype)
+# class UpdatedMeanIoU(tf.keras.metrics.MeanIoU):
+#   def __init__(self,
+#                y_true=None,
+#                y_pred=None,
+#                num_classes=None,
+#                name=None,
+#                dtype=None):
+#     super(UpdatedMeanIoU, self).__init__(num_classes = num_classes,name=name, dtype=dtype)
 
-  def update_state(self, y_true, y_pred, sample_weight=None):
-    y_pred = tf.math.argmax(y_pred, axis=-1)
-    return super().update_state(y_true, y_pred, sample_weight)
+#   def update_state(self, y_true, y_pred, sample_weight=None):
+#     y_pred = tf.math.argmax(y_pred, axis=-1)
+#     return super().update_state(y_true, y_pred, sample_weight)
+
+# RMSE for continuous evaluation
+def root_mean_squared_error(y_true, y_pred):
+        return K.sqrt(K.mean(K.square(y_pred - y_true))) 
 
 model = tf.keras.Model(inputs = inputs, outputs = output)
-model.compile(optimizer=Adam(learning_rate=lr_schedule), loss = tf.keras.losses.SparseCategoricalCrossentropy(),
+model.compile(optimizer=Adam(learning_rate=lr_schedule), loss = root_mean_squared_error,
               metrics=['MeanSquaredError'])
 
 # Mini-batching settings ######################
