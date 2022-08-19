@@ -1,23 +1,13 @@
 import numpy as np
 import os
 import tensorflow as tf
-dataset_path = "F:/gis/sidv2/data/train"
 
-# path = os.path.join(dataset_path, "London_2017_5.npy")
-
-# data = np.load(path)
-# label = data[5, :, :]
-# label = np.reshape(label, (1,1024,1024))
-# #swap evi with the UI channel, and slice it off
-# data[5,:,:] = data[6,:,:]
-# features = data[:6,:,:]
-
-# features = tf.reshape(features, [1024,1024,6])
-# label = tf.reshape(label, [1024,1024,1])
-
-def parse_data(path , calibrate_param:float = 0.4):
+def parse_data(path , calibrate_param:float = 0.4, rotation:bool = False, augmentation_prop:float = 0.0):
     data = np.load(path)
     data = tf.convert_to_tensor(data, dtype=tf.float32)
+
+    # Preprocessing steps for all layers:
+
     label = data[5, :, :]
     label = np.reshape(label, (1,1024,1024))
 
@@ -27,30 +17,58 @@ def parse_data(path , calibrate_param:float = 0.4):
     features = np.nan_to_num(features)
     label = np.nan_to_num(label)
 
+    #Random rotation
+    if rotation:
+        if(np.random.uniform(0,1) > augmentation_prop):
+            features = np.apply_along_axis(np.rot90, 0, features)
+            label = np.rot90(label)
+
+    # conver to tf (now immutable)
+
     features = tf.reshape(features, [1024,1024,6])
     label = tf.reshape(label, [1024,1024,1])
 
     RGB_calibrated = tf.map_fn(lambda x: tf.math.minimum(x,calibrate_param), features[:,:,0:3])
-    features = tf.concat([RGB_calibrated, features[:,:,3:]], axis=2)
-    return (features, label) # TODO : consider mapping from tuple to dict? or does tuple work?
+    RGB_calibrated = tf.cast(RGB_calibrated, tf.float32) / calibrate_param # normalize the RGB features to vary between [0,1]
+    out = RGB_calibrated # TODO: reconstruct the features tensor (possibility to be optimized?)
 
-training_dataset = tf.data.Dataset.list_files("F:/gis/sidv2/data/train/*", seed=321, shuffle=False)
-#training_dataset = training_dataset.map(lambda x: parse_data(x, 0.4))
-#training_dataset = training_dataset.map(lambda x: tf.py_function(parse_data, [x,0.4], (tf.float32, tf.float32)))
+    for i in range(3,6):
+        norm_param = tf.math.reduce_max(features[:,:,i])
+        normalized = features[:,:,i]/norm_param
+        normalized = tf.reshape(normalized, [1024,1024,1])
+        out = tf.concat([out, normalized], axis=2)
 
-training_dataset = training_dataset.map(lambda i: tf.numpy_function(func=parse_data, 
-                                               inp=[i,0.4], 
-                                               Tout=(tf.float32, tf.float32)
-                                               ), 
-                      num_parallel_calls=tf.data.AUTOTUNE)
+    # out = features.set_shape((1024,1024,6))
+    # label = label.set_shape((1024,1024))
 
-for i in training_dataset.take(1):
-    print(i[0].numpy().shape)
+    return (out, label)
 
-# features, label = calibrate(features, label, 0.4)
+def set_shapes(img, label):
+    img.set_shape([1024,1024,6])
+    label.set_shape([1024,1024,1])
+    return img, label
 
-# train_dataset = tf.data.Dataset.from_tensor_slices((features, label))
 
-###############################
+def construct_dataset(path:str):
+    dataset = tf.data.Dataset.list_files(path, seed=321, shuffle=False)
 
-# tf.reduce_max(tensor_without_nans)
+    dataset = dataset.map(lambda i: tf.numpy_function(func=parse_data, 
+                                                inp=[i,0.4], 
+                                                Tout=(tf.float32, tf.float32)
+                                                ), 
+                        num_parallel_calls=tf.data.AUTOTUNE)
+
+    # ensure shape goes here
+    dataset = dataset.map(lambda img,label: set_shapes(img,label))
+
+    return dataset
+
+
+# Testing purposes only:
+
+# for case in training_dataset.take(1):
+#     for dim in range(0,6):
+#         print(f"Dimension {dim} Mean: {np.mean(case[0].numpy()[:,:,dim])}")
+#         print(f"Dimension {dim} 90th percentile: {np.percentile(case[0].numpy()[:,:,dim], 90)}")
+#         print(f"Dimension {dim} 10th percentile: {np.percentile(case[0].numpy()[:,:,dim], 10)}")
+#         print("---")
