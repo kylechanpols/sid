@@ -28,22 +28,24 @@ if gpus:
         print(e)
 
 # Image size that we are going to use
-IMG_SIZE = 1024
+IMG_SIZE = 256
+# 
 # Number of channels (we have 7-1 (-1 of the dv channel))
-N_CHANNELS = 6
+N_CHANNELS = 7-1
+
 # Scene Parsing
 #N_CLASSES = 2
 
 BUFFER_SIZE = 1000
 BATCH_SIZE = 4
 
-TRAINSET_SIZE = len(glob(main_path + "data/train/*.npy"))
+TRAINSET_SIZE = len(glob(os.path.join(main_path,"data","train","*.npy")))
 print(f"The Training Dataset contains {TRAINSET_SIZE} images.")
 
-TESTSET_SIZE = len(glob(main_path + "data/test/*.npy"))
+TESTSET_SIZE = len(glob(os.path.join(main_path,"data","test","*.npy")))
 print(f"The Testing Dataset contains {TESTSET_SIZE} images.")
 
-DEVSET_SIZE = len(glob(main_path + "data/dev/*.npy"))
+DEVSET_SIZE = len(glob(os.path.join(main_path,"data","dev","*.npy")))
 print(f"The Dev Dataset contains {DEVSET_SIZE} images.")
 
 VALIDATION_STEPS = DEVSET_SIZE // BATCH_SIZE

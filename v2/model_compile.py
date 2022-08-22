@@ -2,18 +2,20 @@ import os
 import math
 from keras import backend as K
 
-main_path = "F:/gis/sidv2/"
+main_path = os.path.join(os.getcwd(),"v2")
 
-checkpoint_dir = main_path+"/weights"
+checkpoint_dir = os.path.join(main_path,"weights")
 
 # Sourcing scripts
-exec(open(os.path.join(main_path + "/tf_setup.py")).read())
-exec(open(os.path.join(main_path + "/data_loader.py")).read())
+exec(open(os.path.join(main_path, "tf_setup.py")).read())
+exec(open(os.path.join(main_path,  "data_loader.py")).read())
 
 # Load in the data
-train_dataset = construct_dataset(os.path.join(main_path, "data", "train", "*"))
-test_dataset = construct_dataset(os.path.join(main_path, "data", "test", "*"))
-dev_dataset = construct_dataset(os.path.join(main_path, "data", "dev", "*"))
+train_dataset = construct_dataset(os.path.join(main_path, "data", "train", "*"), IMG_SIZE=IMG_SIZE)
+test_dataset = construct_dataset(os.path.join(main_path, "data", "test", "*"), IMG_SIZE=IMG_SIZE)
+dev_dataset = construct_dataset(os.path.join(main_path, "data", "dev", "*"), IMG_SIZE=IMG_SIZE)
+
+unit_test_dataloader(train_dataset,IMG_SIZE=IMG_SIZE, N_CHANNELS=N_CHANNELS)
 
 BUFFER_SIZE = 1000
 BATCH_SIZE = 32
