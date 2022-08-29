@@ -17,7 +17,7 @@ print(f"Tensorflow ver. {tf.__version__}")
 
 SEED = 42
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
+gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     try:
         for gpu in gpus:
@@ -36,8 +36,10 @@ N_CHANNELS = 7-1
 # Scene Parsing
 #N_CLASSES = 2
 
-BUFFER_SIZE = 1000
-BATCH_SIZE = 4
+BUFFER_SIZE = 100
+print(f"Debug: Draw Buffer size: {BUFFER_SIZE}")
+BATCH_SIZE = 10
+print(f"Debug: Batch Size: {BATCH_SIZE}")
 
 TRAINSET_SIZE = len(glob(os.path.join(main_path,"data","train","*.npy")))
 print(f"The Training Dataset contains {TRAINSET_SIZE} images.")

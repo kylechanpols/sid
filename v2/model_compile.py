@@ -2,7 +2,7 @@ import os
 import math
 from keras import backend as K
 
-main_path = os.path.join(os.getcwd(),"v2")
+main_path =os.getcwd()
 
 checkpoint_dir = os.path.join(main_path,"weights")
 
@@ -16,9 +16,6 @@ test_dataset = construct_dataset(os.path.join(main_path, "data", "test", "*"), I
 dev_dataset = construct_dataset(os.path.join(main_path, "data", "dev", "*"), IMG_SIZE=IMG_SIZE)
 
 unit_test_dataloader(train_dataset,IMG_SIZE=IMG_SIZE, N_CHANNELS=N_CHANNELS)
-
-BUFFER_SIZE = 1000
-BATCH_SIZE = 32
 
 dataset = {"train": train_dataset, "test": test_dataset, "dev":dev_dataset}
 
@@ -101,7 +98,7 @@ conv_dec_4 = Conv2D(2, 3, activation = 'relu', padding = 'same', kernel_initiali
 # -- Dencoder -- #
 
 # output = Conv2D(N_CLASSES, 1, activation = 'softmax')(conv_dec_4) - only valid for 2-class segmentation problem
-output = Conv2D(1,1, activation="sigmoid")(conv_dec_4)
+output = Dense(1, activation="linear")(conv_dec_4)
 
 # Weight Decay "Schedule" - can be replaced with the learning_rate parameter.
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -128,16 +125,17 @@ def root_mean_squared_error(y_true, y_pred):
         return K.sqrt(K.mean(K.square(y_pred - y_true))) 
 
 model = tf.keras.Model(inputs = inputs, outputs = output)
-model.compile(optimizer=Adam(learning_rate=lr_schedule), loss = root_mean_squared_error,
+model.compile(optimizer=Adam(learning_rate=lr_schedule), loss='mean_squared_error',
               metrics=['MeanSquaredError'])
 
 # Mini-batching settings ######################
 
 STEPS_PER_EPOCH = TRAINSET_SIZE // BATCH_SIZE
+print(f"Steps per epoch: {STEPS_PER_EPOCH}")
 
 # Using #dataset.repeat to randomly sample some 50 epochs and train on them.
 EPOCHS = 30
 
 VALIDATION_STEPS = DEVSET_SIZE // BATCH_SIZE
-
+print(f"Val steps: {VALIDATION_STEPS}")
 print(model.summary())
