@@ -1,5 +1,6 @@
 import os
 import math
+from pickletools import optimize
 from keras import backend as K
 
 main_path =os.getcwd()
@@ -125,8 +126,9 @@ def root_mean_squared_error(y_true, y_pred):
         return K.sqrt(K.mean(K.square(y_pred - y_true))) 
 
 model = tf.keras.Model(inputs = inputs, outputs = output)
-model.compile(optimizer=Adam(learning_rate=lr_schedule), loss='mean_squared_error',
-              metrics=['MeanSquaredError'])
+model.compile(optimizer = tf.keras.optimizers.RMSprop(), loss='mean_squared_error',metrics=['MeanSquaredError'])
+# model.compile(optimizer=Adam(learning_rate=lr_schedule), loss='mean_squared_error',
+#               metrics=['MeanSquaredError'])
 
 # Mini-batching settings ######################
 
@@ -134,7 +136,7 @@ STEPS_PER_EPOCH = TRAINSET_SIZE // BATCH_SIZE
 print(f"Steps per epoch: {STEPS_PER_EPOCH}")
 
 # Using #dataset.repeat to randomly sample some 50 epochs and train on them.
-EPOCHS = 30
+EPOCHS = 10
 
 VALIDATION_STEPS = DEVSET_SIZE // BATCH_SIZE
 print(f"Val steps: {VALIDATION_STEPS}")

@@ -38,7 +38,7 @@ N_CHANNELS = 7-1
 
 BUFFER_SIZE = 100
 print(f"Debug: Draw Buffer size: {BUFFER_SIZE}")
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 print(f"Debug: Batch Size: {BATCH_SIZE}")
 
 TRAINSET_SIZE = len(glob(os.path.join(main_path,"data","train","*.npy")))
