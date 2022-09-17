@@ -3,11 +3,34 @@ import os
 import tensorflow as tf
 from skimage.transform import resize
 
-def parse_data(path , rotation:bool = False, augmentation_prop:float = 0.5, should_resize:bool= True, IMG_SIZE:int = 256):
-    data = np.load(path)
-    data = np.nan_to_num(data)
+def parse_data(path ,
+ rotation:bool = False,
+  augmentation_prop:float = 0.5,
+   should_resize:bool= True,
+    IMG_SIZE:int = 256,
+    dev:bool = True,
+    single_tgt:bool = False):
+    '''
+    Generic data parser for Google Earth Engine Satellite Images (7-channels) to extract and transform relevant features and label from source image
+    args:
+    path (str) - a path to the source image, must be .npy files
+    rotation (bool) - Shall we perform random rotation?
+    augmentation_prop (float) - Probability at which the image augmentation technique is applied
+    should_resize (bool) - Shall we resize the source image? Note that it's always recommended to downsize the source image to simplify the complexity of the learning task.
+    IMG_SIZE (int) - Size of the image to be resized to. Currently the parser only support square images, so the output image will be turned to an array of IMG-SIZE * IMG_SIZE.
+    dev (bool) - Flag to run the parser in development mode. In development mode, image augmentation tasks are applied to the image. In prediction mode (dev= False), no augmentation steps are applied to the image.
+    single_tgt (bool) - Flag to generate single target ouput. If set to True, an extra reduce sum along the image width and image height axes will be applied to the image for use in the Efficient Net B0 model. If set to False,
+                        the parser will return the output image as is.
+    
+    output:
+        A tuple (feature, label). Feature will be of dimension (N_EXAMPLE, IMG_SIZE, IMG_SIZE, N_CHANNELS).
+        The label dimension is (N_EXAMPLE, IMG_SIZE, IMG_SIZE, 1) if single_tgt is set to False, and (N_EXAMPLE, 1, 1) if single_tgt is set to True.
+    '''
 
-    # New normalizer
+    data = np.load(path)
+    data = np.nan_to_num(data, nan=1)
+
+    # Normalizer
 
     data_min = data.min(axis=(1,2), keepdims=True) # dont divide by 0
     _recode_0 = np.vectorize(lambda x: max(x,0.0001))
@@ -15,7 +38,7 @@ def parse_data(path , rotation:bool = False, augmentation_prop:float = 0.5, shou
     data_max = data.max(axis=(1,2),keepdims=True)
     data = (data - data_min)/(data_max - data_min)
 
-    # EXPR - resize using skimage.
+    # resize using skimage.
     if should_resize:
         small = np.zeros((7,IMG_SIZE,IMG_SIZE))
         for dim in range(0,7):
@@ -26,75 +49,143 @@ def parse_data(path , rotation:bool = False, augmentation_prop:float = 0.5, shou
     # Preprocessing steps for all layers:
 
     #Random rotation
-    if rotation:
+    if dev and rotation:
         if(np.random.uniform(0,1) > augmentation_prop):
             data = np.rot90(data, axes=(1,2))
-
-    label = data[5, :, :]
-    label = np.reshape(label, (1,IMG_SIZE,IMG_SIZE))
+    
+    if dev:
+        label = data[5, :, :]
+        # Enforce to 0 and 1
+        _recode_0 = np.vectorize(lambda x: max(x,0))
+        label = _recode_0(label)
+        label = np.reshape(label, (1,IMG_SIZE,IMG_SIZE))
 
     features = np.delete(data, 5, 0) # cut off the UI channel
 
 
-    # conver to tf (now immutable)
+    # conver to tf
+    tmp = np.zeros((IMG_SIZE,IMG_SIZE,6))
+    for c in range(0, 6):
+        tmp[:,:,c] = features[c,:,:]
+    features = tmp
+    del tmp
 
-    features = tf.reshape(features, [IMG_SIZE,IMG_SIZE ,6])
-    #features = tf.cast(features, tf.float32)
-    label = tf.reshape(label, [IMG_SIZE,IMG_SIZE,1])
-    #label = tf.cast(label, tf.float32)
-
-    #RGB_calibrated = tf.map_fn(lambda x: tf.math.minimum(x,calibrate_param), features[:,:,0:3])
-    #RGB_calibrated = tf.cast(RGB_calibrated, tf.float32) / calibrate_param # normalize the RGB features to vary between [0,1]
-    # out = tf.experimental.numpy.empty([IMG_SIZE,IMG_SIZE,1]) # TODO: reconstruct the features tensor (possibility to be optimized?)
-    # out = tf.cast(out, tf.float32)
-    # for i in range(0,6):
-    #     norm_param = tf.math.reduce_max(features[:,:,i])
-    #     normalized = features[:,:,i]/norm_param
-    #     normalized = tf.reshape(normalized, [IMG_SIZE,IMG_SIZE,1])
-    #     normalized = tf.cast(normalized, tf.float32)
-    #     out = tf.concat([out, normalized], axis=2)
+    if dev:
+        label = tf.reshape(label, [IMG_SIZE,IMG_SIZE,1])
 
     features = np.nan_to_num(features)
-    label = np.nan_to_num(label)
-
+    features = _recode_0(features)
     features = tf.cast(features, tf.float32)
-    label = tf.cast(label, tf.float32)
+    if dev:
+        label = np.nan_to_num(label)
+        label = tf.cast(label, tf.float32)
 
-    return (features, label)
+    if single_tgt:
+        label = tf.math.reduce_sum(label)
+
+    if dev:
+        return (features, label)
+    else:
+        return features
+
             
-def set_shapes(img, label, IMG_SIZE:int = 256):
+def set_shapes(img, label, IMG_SIZE:int = 256, single_tgt:bool = False):
+    '''
+    Explicitly state the shape of the image arrays for tf.Data.Dataset to work properly.
+    args:
+        img - feature array (must be np array)
+        label - label array (must be np array)
+        IMG_SIZE - Size of the image to set to
+        single_tgt -  Flag to generate single target ouput. If set to True, the shape of the label is set to ([]), which means a scalar. If set to False,
+            It will be set to (IMG_SIZE, IMG-SIZE, 1)
+    
+    output:
+        img, label with shaps explicitly defined for tf.Data.Dataset.
+    '''
     img.set_shape([IMG_SIZE,IMG_SIZE,6])
-    label.set_shape([IMG_SIZE,IMG_SIZE,1])
+    if single_tgt:
+        label.set_shape([]) #scalar
+    else:
+        label.set_shape([IMG_SIZE,IMG_SIZE,1])
     return img, label
 
+def set_pred_shapes(img, IMG_SIZE:int = 256):
+    '''
+    See set_shapes(). Prediction routine variant that only sets the shape for the prediction image array.
+    '''
+    img.set_shape([IMG_SIZE,IMG_SIZE,6])
+    return img
 
-def construct_dataset(path:str, IMG_SIZE:int = 256):
+def construct_dataset(path:str, IMG_SIZE:int = 256, single_tgt:bool = False):
+    '''
+    Main body function to create a tf.Data.Dataset.
+    
+    input args:
+        path (str)- the path to the image, must be a .npy array.
+        IMG_SIZE (int) - the desired size of the image to resize to. Currently the parser only support square images, so the output image will be turned to an array of IMG-SIZE * IMG_SIZE.
+        single_tgt (bool) - Flag to generate single target ouput. If set to True, an extra reduce sum along the image width and image height axes will be applied to the image for use in the Efficient Net B0 model. If set to False,
+                        the parser will return the output image as is.
+
+    ouput:
+        a tf.data.Dataset class with a tuple (feature, label) inside.
+    '''
     dataset = tf.data.Dataset.list_files(path, seed=321, shuffle=False)
 
     dataset = dataset.map(lambda i: tf.numpy_function(func=parse_data, 
-                                                inp=[i,True, 0.5, True,IMG_SIZE], # parameters for parse_data()
-                                                # parse_data(path , rotation:bool = False, augmentation_prop:float = 0.5, resize:bool= True, IMG_SIZE:int = 256):
+                                                inp=[i,True, 0.5, True,IMG_SIZE, True, single_tgt], # parameters for parse_data()
+                                                # parse_data(path , rotation:bool = False, augmentation_prop:float = 0.5, resize:bool= True, IMG_SIZE:int = 256, dev:bool= True, single-tgt:bool = False):
                                                 Tout=(tf.float32, tf.float32)
                                                 ), 
                         num_parallel_calls=tf.data.AUTOTUNE)
 
+    # dataset = dataset.map(lambda i: tf.numpy_function(func=parse_data, 
+    #                                         inp=[i,True, 0.5, True,IMG_SIZE, True, True], # parameters for parse_data()
+    #                                         # parse_data(path , rotation:bool = False, augmentation_prop:float = 0.5, resize:bool= True, IMG_SIZE:int = 256, dev:bool= True, single-tgt:bool = False):
+    #                                         Tout=(tf.float32, tf.float32)
+    #                                         ), 
+    #                 num_parallel_calls=tf.data.AUTOTUNE)
+
     # ensure shape goes here
-    dataset = dataset.map(lambda img,label: set_shapes(img,label))
+    # dataset = dataset.map(lambda img,label: set_shapes(img,label,IMG_SIZE))
+    dataset = dataset.map(lambda img,label: set_shapes(img,label,IMG_SIZE, single_tgt=single_tgt))
+    return dataset
+
+def construct_predset(path:str, IMG_SIZE:int = 256, single_tgt:bool = False):
+    '''
+    See construct_dataset(). The prediction data variant that only transforms the prediction data, with no label attached in the 
+    outcome tf.data.Dataset.
+
+    output:
+        a class tf.data.Dataset with the feature array defined
+    '''
+    dataset = tf.data.Dataset.list_files(path, seed=321, shuffle=False)
+
+    dataset = dataset.map(lambda i: tf.numpy_function(func=parse_data, 
+                                                inp=[i,True, 0.5, True,IMG_SIZE, False], # parameters for parse_data()
+                                                # parse_data(path , rotation:bool = False, augmentation_prop:float = 0.5, resize:bool= True, IMG_SIZE:int = 256):
+                                                Tout=tf.float32
+                                                ), 
+                        num_parallel_calls=tf.data.AUTOTUNE)
+
+    # ensure shape goes here
+    dataset = dataset.map(lambda img: set_pred_shapes(img,IMG_SIZE))
 
     return dataset
 
-def unit_test_dataloader(dataset, IMG_SIZE:int = 256, N_CHANNELS:int = 6):
+def unit_test_dataloader(dataset, IMG_SIZE:int = 256, N_CHANNELS:int = 6, single_tgt:bool = False):
+    '''
+    A simple tester for the dataloader routine. It will check the shape of the constructed dataset to see if the shape is as expected.
+    input args:
+        dataset (tf.Data.Dataset) - a dataset built by calling `construct_dataset()`.
+        IMG_SIZE (int) - IMG_SIZE defined when calling `construct_dataset()`.
+        N_CHANNELS (int) - Number of channels in the feature array
+        single-tgt (bool) - Flag for single target output. If set to True, the unit tester expects the shape of the label to be [] (scalar). If set to False,
+            the unit tester expects the shape of the label to be (IMG_SIZE, IMG_SIZE, 1).
+    '''
     for i in dataset.take(1):
         assert i[0].shape == (IMG_SIZE, IMG_SIZE, N_CHANNELS), f"Features have incorrect shape: {i[0].shape}; Expected: {(IMG_SIZE,IMG_SIZE, N_CHANNELS)}"
-        assert i[1].shape == (IMG_SIZE,IMG_SIZE,1), f"Label has incorrect shape: {i[1].shape}; Expected: {(IMG_SIZE,IMG_SIZE,1)}"
+        if single_tgt:
+            assert i[1].shape == [], f"Label has incorrect shape: {i[1].shape}; Expected: [] (Scalar)"
+        else:
+            assert i[1].shape == (IMG_SIZE,IMG_SIZE,1), f"Label has incorrect shape: {i[1].shape}; Expected: {(IMG_SIZE,IMG_SIZE,1)}"
     print("SUCCESS: Passed Unit Test for Data Loader")
-
-
-# Testing purposes only:
-
-# for case in training_dataset.take(1):
-#     for dim in range(0,6):
-#         print(f"Dimension {dim} Mean: {np.mean(case[0].numpy()[:,:,dim])}")
-#         print(f"Dimension {dim} 90th percentile: {np.percentile(case[0].numpy()[:,:,dim], 90)}")
-#         print(f"Dimension {dim} 10th percentile: {np.percentile(case[0].numpy()[:,:,dim], 10)}")
-#         print("---")

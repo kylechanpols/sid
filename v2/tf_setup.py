@@ -8,6 +8,7 @@ import datetime, os
 from tensorflow.keras.layers import *
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.metrics import MeanIoU
 from IPython.display import clear_output
 
@@ -28,7 +29,8 @@ if gpus:
         print(e)
 
 # Image size that we are going to use
-IMG_SIZE = 256
+IMG_SIZE = 128
+print(f"Image Size is set to: {IMG_SIZE}")
 # 
 # Number of channels (we have 7-1 (-1 of the dv channel))
 N_CHANNELS = 7-1
@@ -38,7 +40,7 @@ N_CHANNELS = 7-1
 
 BUFFER_SIZE = 100
 print(f"Debug: Draw Buffer size: {BUFFER_SIZE}")
-BATCH_SIZE = 5
+BATCH_SIZE = 32
 print(f"Debug: Batch Size: {BATCH_SIZE}")
 
 TRAINSET_SIZE = len(glob(os.path.join(main_path,"data","train","*.npy")))
@@ -49,5 +51,8 @@ print(f"The Testing Dataset contains {TESTSET_SIZE} images.")
 
 DEVSET_SIZE = len(glob(os.path.join(main_path,"data","dev","*.npy")))
 print(f"The Dev Dataset contains {DEVSET_SIZE} images.")
+
+DEVSET_SIZE = len(glob(os.path.join(main_path,"data","pred","*.npy")))
+print(f"The Prediction Dataset contains {DEVSET_SIZE} images.")
 
 VALIDATION_STEPS = DEVSET_SIZE // BATCH_SIZE
