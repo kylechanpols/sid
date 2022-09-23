@@ -6,7 +6,7 @@ import numpy as np
 os.chdir("F:/gis/github/v2/image_processing")
 base_path = os.getcwd()
 in_path = os.path.join(base_path, "raw_tifs/")
-city = "Zaragoza" # change this to different city names
+city = "CH" # change this to different city names
 
 out_path = os.path.join(base_path, "output/")
 
@@ -27,9 +27,16 @@ def convert(input,fname,outpath):
     #manual padding
     newimg = np.zeros((n_c,(nearest_x+1)*tile_size_x, (nearest_y+1)*tile_size_y))
     newimg[:,:end_x, :end_y] = input[:,:end_x, :end_y]
-    newimg = np.reshape(newimg,(-1,n_c,tile_size_x, tile_size_y))
-    for tile in range(newimg.shape[0]):
-        np.save(os.path.join(out_path ,  f"{fname}_{str(tile)}.npy"),newimg[tile,])
+    # newimg = np.reshape(newimg,(-1,n_c,tile_size_x, tile_size_y))
+    new_end_x = newimg.shape[1]
+    new_end_y = newimg.shape[2]
+    tiler = 0
+    for x in range(0, new_end_x//tile_size_x):
+        for y in range(0, new_end_y//tile_size_y):
+            arr = newimg[:, (x*tile_size_x): ((x+1)*tile_size_x), (y*tile_size_y): ((y+1)*tile_size_y)]
+            print(f"Cutting: {(x*tile_size_x)}:{((x+1)*tile_size_x)}, {(y*tile_size_y)}:{((y+1)*tile_size_y)}")
+            np.save(os.path.join(out_path ,  f"{fname}_{str(tiler)}.npy"),arr)
+            tiler += 1
 
 
 for root, directories, files in os.walk(in_path):
