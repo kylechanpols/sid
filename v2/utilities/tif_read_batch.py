@@ -3,10 +3,15 @@
 import os
 from osgeo import gdal
 import numpy as np
+import sys, getopt
+
+
 os.chdir("F:/gis/github/v2/image_processing")
 base_path = os.getcwd()
 in_path = os.path.join(base_path, "raw_tifs/")
-city = "CH" # change this to different city names
+city = "Seattle" # change this to different city names
+multi_tiled = False # supports large multi-tiled geotiff
+gcs = True
 
 out_path = os.path.join(base_path, "output/")
 
@@ -27,14 +32,14 @@ def convert(input,fname,outpath):
     #manual padding
     newimg = np.zeros((n_c,(nearest_x+1)*tile_size_x, (nearest_y+1)*tile_size_y))
     newimg[:,:end_x, :end_y] = input[:,:end_x, :end_y]
-    # newimg = np.reshape(newimg,(-1,n_c,tile_size_x, tile_size_y))
+    # newimg = np.reshape(newimg,(-1,n_c,tile_size_x, tile_size_y)) -  contiguous array reshaping, wrong
     new_end_x = newimg.shape[1]
     new_end_y = newimg.shape[2]
     tiler = 0
     for x in range(0, new_end_x//tile_size_x):
         for y in range(0, new_end_y//tile_size_y):
             arr = newimg[:, (x*tile_size_x): ((x+1)*tile_size_x), (y*tile_size_y): ((y+1)*tile_size_y)]
-            print(f"Cutting: {(x*tile_size_x)}:{((x+1)*tile_size_x)}, {(y*tile_size_y)}:{((y+1)*tile_size_y)}")
+            print(f"Cropping: {(x*tile_size_x)}:{((x+1)*tile_size_x)}, {(y*tile_size_y)}:{((y+1)*tile_size_y)}")
             np.save(os.path.join(out_path ,  f"{fname}_{str(tiler)}.npy"),arr)
             tiler += 1
 
@@ -44,7 +49,12 @@ for root, directories, files in os.walk(in_path):
         if file.lower().endswith(".tif"):
             input = root+file
             print(f"found {input}")
-            fname = city + "_" + file.split("_")[2][0:4]
+            if gcs:
+                fname = file.split(".")[0] #if saving to gcs, file names have to be manually specific so no reformatting needed
+            else:
+                fname = city + "_" + file.split("_")[2][0:4]
+            if multi_tiled:
+                fname = f'{city}_{file.split("_")[2][0:4]}_{file.split("-")[1]}-{file.split("-")[2].split(".")[0]}'
             print(f"writing {fname}")
             convert(input, fname, out_path)
 
