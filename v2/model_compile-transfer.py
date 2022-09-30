@@ -19,12 +19,12 @@ exec(open(os.path.join(main_path, "tf_setup.py")).read())
 exec(open(os.path.join(main_path,  "data_loader.py")).read())
 
 # Load in the data
-train_dataset = construct_dataset(os.path.join(main_path, "data", "train", "*"), IMG_SIZE=IMG_SIZE, single_tgt=True)
-test_dataset = construct_dataset(os.path.join(main_path, "data", "test", "*"), IMG_SIZE=IMG_SIZE, single_tgt=True)
-dev_dataset = construct_dataset(os.path.join(main_path, "data", "dev", "*"), IMG_SIZE=IMG_SIZE, single_tgt=True)
+train_dataset = construct_dataset(os.path.join(main_path, "data", "train", "*"), IMG_SIZE=IMG_SIZE,  single_tgt=True, rgb=False)
+test_dataset = construct_dataset(os.path.join(main_path, "data", "test", "*"), IMG_SIZE=IMG_SIZE,single_tgt=True, rgb=False)
+dev_dataset = construct_dataset(os.path.join(main_path, "data", "dev", "*"), IMG_SIZE=IMG_SIZE, single_tgt=True, rgb=False)
 
 # Call the unit tester to see if the returned images are of the correct dims
-unit_test_dataloader(train_dataset,IMG_SIZE=IMG_SIZE, N_CHANNELS=N_CHANNELS, single_tgt=True)
+unit_test_dataloader(train_dataset,IMG_SIZE=IMG_SIZE, N_CHANNELS= N_CHANNELS, single_tgt=True)
 
 dataset = {"train": train_dataset, "test": test_dataset, "dev":dev_dataset}
 
@@ -65,6 +65,7 @@ model = EfficientNetB0(include_top=False,
 model.trainable = False # freeze all layers of Efficient Net B0
 
 bottom_input = model(decreasing)
+# bottom_input = model(inputs)
 
 # custom bottom to turn efficient net b0 output to regression
 
@@ -97,3 +98,4 @@ VALIDATION_STEPS = DEVSET_SIZE // BATCH_SIZE
 print(f"Val steps: {VALIDATION_STEPS}")
 print(model.summary())
 
+tf.keras.utils.plot_model(model, to_file="efficientnetb0.png")

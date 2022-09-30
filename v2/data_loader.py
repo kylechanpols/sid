@@ -3,6 +3,11 @@ import os
 import tensorflow as tf
 from skimage.transform import resize
 from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
+
+brookings = pd.read_csv("F:/gis/github/v2/brookings_datapoints.csv", encoding="latin-1")
+brookings = brookings[~brookings['gdppp2014_brookings'].isna()]
+float(brookings[brookings['city_name']=="Naples"]['gdppp2014_brookings'])
 
 def parse_data(path ,
  rotation:bool = False,
@@ -13,7 +18,8 @@ def parse_data(path ,
     single_tgt:bool = False,
     calibrate_rgb:float= 0.4,
     calibrate_rs:float= 0.1,
-    rgb:bool= False):
+    rgb:bool= False,
+    gdp_tracking:bool = False):
     '''
     Generic data parser for Google Earth Engine Satellite Images (7-channels) to extract and transform relevant features and label from source image
     args:
@@ -26,11 +32,12 @@ def parse_data(path ,
     single_tgt (bool) - Flag to generate single target ouput. If set to True, an extra reduce sum along the image width and image height axes will be applied to the image for use in the Efficient Net B0 model. If set to False,
                         the parser will return the output image as is.
     rgb(bool) - Should we return only RGB? Will return only the RGB layers if set to True.
+    gdp_tracking(bool) - EXPERIMENTAL - put loader in GDP tracking mode. The loader will ref back to the brookings 2014 data and use the brookings 2014 data as the label instead.
     output:
         A tuple (feature, label). Feature will be of dimension (N_EXAMPLE, IMG_SIZE, IMG_SIZE, N_CHANNELS).
         The label dimension is (N_EXAMPLE, IMG_SIZE, IMG_SIZE, 1) if single_tgt is set to False, and (N_EXAMPLE, 1, 1) if single_tgt is set to True.
     '''
-
+    cur_city = path.split("")
     data = np.load(path)
 
     # NA Encoding
@@ -38,8 +45,14 @@ def parse_data(path ,
     data[:3, : ,:] = np.nan_to_num(data[:3, : ,:], nan=0) #na is out of bounds pixel, and thus recoded as 0
 
     # rs, na code to their respective layer minimum
+    # but do note that all nan slice could exist, and those require encoding:
+
     for dim in range(3, data.shape[0]):
-        data[dim, : ,:] = np.nan_to_num(data[dim, : ,:], nan=np.nanmin(data[dim, : ,:])) #na is out of bounds pixel, and thus recoded as 0
+        if np.isnan(data[dim, : ,:]).sum() == data.shape[1]*data.shape[2]:
+            slice_min = -10
+        else:
+            slice_min = np.nanmin(data[dim, : ,:])
+        data[dim, : ,:] = np.nan_to_num(data[dim, : ,:], nan=slice_min) #na is out of bounds pixel, and thus recoded as 0
 
     # data = np.nan_to_num(data, nan=0) #na is out of bounds pixel, and thus recoded as 0
 
@@ -57,13 +70,6 @@ def parse_data(path ,
     for dim in range(3, data.shape[0]):
         data[dim, :, :] = mms.fit_transform(data[dim,:,:])
 
-    # Normalizer (deprecated)
-    # data_min = data.min(axis=(1,2), keepdims=True) # dont divide by 0
-    # _recode_0 = np.vectorize(lambda x: max(x,0.0001))
-    # data_min = _recode_0(data_min)
-    # data_max = data.max(axis=(1,2),keepdims=True)
-    # data = (data - data_min)/(data_max - data_min)
-
     # resize using skimage.
     if should_resize:
         small = np.zeros((7,IMG_SIZE,IMG_SIZE))
@@ -77,12 +83,16 @@ def parse_data(path ,
         if(np.random.uniform(0,1) > augmentation_prop):
             data = np.rot90(data, axes=(1,2))
     
+    _recode_0 = np.vectorize(lambda x: max(x,0))
+    
     if dev:
-        label = data[5, :, :]
-        # Enforce to 0 and 1, then clip
-        _recode_0 = np.vectorize(lambda x: max(x,0))
-        label = _recode_0(label)
-        label = np.reshape(label, (1,IMG_SIZE,IMG_SIZE))
+        if gdp_tracking:
+            label = float(brookings[brookings['city_name']==cur_city]['gdppp2014_brookings'])
+        else:
+            label = data[5, :, :]
+            # Enforce to 0 and 1, then clip
+            label = _recode_0(label)
+            label = np.reshape(label, (1,IMG_SIZE,IMG_SIZE))
 
     features = np.delete(data, 5, 0) # cut off the UI channel
 

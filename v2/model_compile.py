@@ -1,6 +1,7 @@
 import os
 from pickletools import optimize
 from keras import backend as K
+import tensorflow_addons as tfa
 
 main_path =os.getcwd()
 
@@ -11,9 +12,9 @@ exec(open(os.path.join(main_path, "tf_setup.py")).read())
 exec(open(os.path.join(main_path,  "data_loader.py")).read())
 
 # Load in the data
-train_dataset = construct_dataset(os.path.join(main_path, "data", "train", "*"), IMG_SIZE=IMG_SIZE)
-test_dataset = construct_dataset(os.path.join(main_path, "data", "test", "*"), IMG_SIZE=IMG_SIZE)
-dev_dataset = construct_dataset(os.path.join(main_path, "data", "dev", "*"), IMG_SIZE=IMG_SIZE)
+train_dataset = construct_dataset(os.path.join(main_path, "data", "train", "*"), IMG_SIZE=IMG_SIZE, single_tgt=False, rgb=False)
+test_dataset = construct_dataset(os.path.join(main_path, "data", "test", "*"), IMG_SIZE=IMG_SIZE, single_tgt=False, rgb=False)
+dev_dataset = construct_dataset(os.path.join(main_path, "data", "dev", "*"), IMG_SIZE=IMG_SIZE, single_tgt=False, rgb=False)
 
 # Call the unit tester to see if the returned images are of the correct dims
 unit_test_dataloader(train_dataset,IMG_SIZE=IMG_SIZE, N_CHANNELS=N_CHANNELS)
@@ -104,6 +105,11 @@ output = Conv2D(1, 1, activation = 'sigmoid')(conv_dec_4)
 # RMSE for continuous evaluation
 def root_mean_squared_error(y_true, y_pred):
         return K.sqrt(K.mean(K.square(y_pred - y_true))) 
+
+# # A lookahead optimizer with rectified Adam
+# radam = tfa.optimizers.RectifiedAdam(learning_rate=0.5)
+# ranger = tfa.optimizers.Lookahead(radam, sync_period=6, slow_step_size=0.5)
+# optimizer = ranger
 
 model = tf.keras.Model(inputs = inputs, outputs = output)
 model.compile(optimizer=Adam(learning_rate=1e-4), loss=root_mean_squared_error)

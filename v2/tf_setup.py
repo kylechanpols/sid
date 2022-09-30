@@ -33,14 +33,14 @@ IMG_SIZE = 128
 print(f"Image Size is set to: {IMG_SIZE}")
 # 
 # Number of channels (we have 7-1 (-1 of the dv channel))
-N_CHANNELS = 7-1
+N_CHANNELS = 6 # used to be 6
 
 # Scene Parsing
 #N_CLASSES = 2
 
 BUFFER_SIZE = 100
 print(f"Debug: Draw Buffer size: {BUFFER_SIZE}")
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 print(f"Debug: Batch Size: {BATCH_SIZE}")
 
 TRAINSET_SIZE = len(glob(os.path.join(main_path,"data","train","*.npy")))

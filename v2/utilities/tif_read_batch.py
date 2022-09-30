@@ -9,7 +9,7 @@ import sys, getopt
 os.chdir("F:/gis/github/v2/image_processing")
 base_path = os.getcwd()
 in_path = os.path.join(base_path, "raw_tifs/")
-city = "Seattle" # change this to different city names
+city = "Beijing" # change this to different city names
 multi_tiled = False # supports large multi-tiled geotiff
 gcs = True
 
@@ -50,11 +50,15 @@ for root, directories, files in os.walk(in_path):
             input = root+file
             print(f"found {input}")
             if gcs:
-                fname = file.split(".")[0] #if saving to gcs, file names have to be manually specific so no reformatting needed
+                if multi_tiled:
+                    names = file.split("_")
+                    fname = f'{names[0]}_{names[1]}_{names[2].split(".")[0]}'
+                else:
+                    fname = file.split(".")[0] #if saving to gcs, file names have to be manually specific so no reformatting needed
             else:
                 fname = city + "_" + file.split("_")[2][0:4]
-            if multi_tiled:
-                fname = f'{city}_{file.split("_")[2][0:4]}_{file.split("-")[1]}-{file.split("-")[2].split(".")[0]}'
+                if multi_tiled:
+                    fname = f'{city}_{file.split("_")[2][0:4]}_{file.split("-")[1]}-{file.split("-")[2].split(".")[0]}'
             print(f"writing {fname}")
             convert(input, fname, out_path)
 

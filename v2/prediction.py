@@ -26,14 +26,14 @@ ranger = tfa.optimizers.Lookahead(radam, sync_period=6, slow_step_size=0.5)
 optimizer = ranger
 
 # Load the pretrained model
-model = tf.keras.models.load_model(os.path.join(checkpoint_dir, "20220912_efficientnetb0"),
+model = tf.keras.models.load_model(os.path.join(checkpoint_dir, "20220925_efficientnetb0_6c"),
     custom_objects = {"root_mean_squared_error":root_mean_squared_error,
         'radam':radam,
         'ranger':ranger})
 
 # Helper functions to make predictions based on city and year.
 
-def pred(model, requirements, IMG_SIZE:int = 128, shard:bool= True, shard_size:int = 100, filename_prefix:str = "model",array_tgt:bool = True):
+def pred(model, requirements, IMG_SIZE:int = 128, shard:bool= True, shard_size:int = 100, filename_prefix:str = "model",array_tgt:bool = True, rgb:bool = False):
     '''
     Main function to make predictions and save the predictions as .csv.
     input ars:
@@ -49,9 +49,9 @@ def pred(model, requirements, IMG_SIZE:int = 128, shard:bool= True, shard_size:i
     output:
         .csvs of model predictions for the desired city and year listed in `requirements`.
     '''
-    def make_pred(model, city, year, IMG_SIZE:int = 128, array_tgt:bool = True):
+    def make_pred(model, city, year, N_CHANNELS=N_CHANNELS, IMG_SIZE:int = 128, array_tgt:bool = True):
         # Prediction Helper Function
-        dataset = construct_predset(os.path.join(main_path, "data", "pred", f"{city}_{year}_*"), IMG_SIZE=IMG_SIZE)
+        dataset = construct_predset(os.path.join(main_path, "data", "pred", f"{city}_{year}_*"), IMG_SIZE=IMG_SIZE, rgb=rgb)
         dataset = {"pred": dataset}
         dataset['pred'] = dataset['pred'].batch(BATCH_SIZE)
         dataset['pred'] = dataset['pred'].prefetch(buffer_size=AUTOTUNE)
@@ -146,10 +146,10 @@ def pred(model, requirements, IMG_SIZE:int = 128, shard:bool= True, shard_size:i
 # Constructing the `requirements` list:
 # It's actuallty a cartesian product of the required city vector and required year vector.
 import glob
-cities = glob.glob(os.path.join(main_path, "data", "pred","*_2015_0.npy"))
+cities = glob.glob(os.path.join(main_path, "data", "pred","*_2014_0.npy"))
 cities = [city.split("\\")[-1].split("_")[0] for city in cities] # split by \\, find last element, then split by _, find first element, that's the city name.
 
-years = glob.glob(os.path.join(main_path, "data", "pred",f"{cities[1]}_*_0.npy"))
+years = glob.glob(os.path.join(main_path, "data", "pred",f"{cities[0]}_*_0.npy"))
 years = [year.split("\\")[-1].split("_")[1] for year in years] # same as above but second element is the year.
 
 from itertools import product
@@ -159,7 +159,7 @@ requirements = []
 for i in product(cities, years):
     requirements.append(i)
 
-pred(model, requirements, IMG_SIZE= 128, shard= True, shard_size= 100, filename_prefix= "trans_efnet_preds", array_tgt=False)
+pred(model, requirements, IMG_SIZE= 128, shard= True, shard_size= 100, filename_prefix= "efficientnetb0_6c", array_tgt=False)
 
 # Can also rewrite this as a main function for running directly:
 # if '__name__' == '__main__':

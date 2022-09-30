@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 main_path = os.getcwd()
-combined = dd.read_csv(os.path.join(main_path,"preds", "trans_efnet_preds_*.csv"))
+combined = dd.read_csv(os.path.join(main_path,"preds", "trans_efnet_rgb_preds_*.csv"))
 combined = combined.compute()
 combined = combined.drop(columns=['Unnamed: 0'])
 
@@ -41,4 +41,4 @@ def gini(x: pd.Series) -> float:
 
 combined = combined.groupby(['City','Year'], as_index=False).agg({'pred':['sum',"min","max",'mean','median','std',gini, 'count']})
 combined.columns = combined.columns.map('_'.join).str.strip('_') #rename columns to be pred_*, where * is the statistic computed
-combined.to_csv(os.path.join(main_path,"preds", "trans_efnet_preds_image_statistics.csv"), index=False)
+combined.to_csv(os.path.join(main_path,"preds", "trans_efnet_rgb_preds_image_statistics.csv"), index=False)
