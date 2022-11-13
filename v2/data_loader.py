@@ -5,9 +5,6 @@ from skimage.transform import resize
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 
-brookings = pd.read_csv("F:/gis/github/v2/brookings_datapoints.csv", encoding="latin-1")
-brookings = brookings[~brookings['gdppp2014_brookings'].isna()]
-float(brookings[brookings['city_name']=="Naples"]['gdppp2014_brookings'])
 
 def parse_data(path ,
  rotation:bool = False,
@@ -18,8 +15,7 @@ def parse_data(path ,
     single_tgt:bool = False,
     calibrate_rgb:float= 0.4,
     calibrate_rs:float= 0.1,
-    rgb:bool= False,
-    gdp_tracking:bool = False):
+    rgb:bool= False):
     '''
     Generic data parser for Google Earth Engine Satellite Images (7-channels) to extract and transform relevant features and label from source image
     args:
@@ -32,12 +28,10 @@ def parse_data(path ,
     single_tgt (bool) - Flag to generate single target ouput. If set to True, an extra reduce sum along the image width and image height axes will be applied to the image for use in the Efficient Net B0 model. If set to False,
                         the parser will return the output image as is.
     rgb(bool) - Should we return only RGB? Will return only the RGB layers if set to True.
-    gdp_tracking(bool) - EXPERIMENTAL - put loader in GDP tracking mode. The loader will ref back to the brookings 2014 data and use the brookings 2014 data as the label instead.
     output:
         A tuple (feature, label). Feature will be of dimension (N_EXAMPLE, IMG_SIZE, IMG_SIZE, N_CHANNELS).
         The label dimension is (N_EXAMPLE, IMG_SIZE, IMG_SIZE, 1) if single_tgt is set to False, and (N_EXAMPLE, 1, 1) if single_tgt is set to True.
     '''
-    cur_city = path.split("")
     data = np.load(path)
 
     # NA Encoding
@@ -86,13 +80,10 @@ def parse_data(path ,
     _recode_0 = np.vectorize(lambda x: max(x,0))
     
     if dev:
-        if gdp_tracking:
-            label = float(brookings[brookings['city_name']==cur_city]['gdppp2014_brookings'])
-        else:
-            label = data[5, :, :]
-            # Enforce to 0 and 1, then clip
-            label = _recode_0(label)
-            label = np.reshape(label, (1,IMG_SIZE,IMG_SIZE))
+        label = data[5, :, :]
+        # Enforce to 0 and 1, then clip
+        label = _recode_0(label)
+        label = np.reshape(label, (1,IMG_SIZE,IMG_SIZE))
 
     features = np.delete(data, 5, 0) # cut off the UI channel
 

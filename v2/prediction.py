@@ -26,10 +26,13 @@ ranger = tfa.optimizers.Lookahead(radam, sync_period=6, slow_step_size=0.5)
 optimizer = ranger
 
 # Load the pretrained model
-model = tf.keras.models.load_model(os.path.join(checkpoint_dir, "20220925_efficientnetb0_6c"),
-    custom_objects = {"root_mean_squared_error":root_mean_squared_error,
-        'radam':radam,
-        'ranger':ranger})
+model = tf.keras.models.load_model(os.path.join(checkpoint_dir, "20220927_unet_6c"),
+    custom_objects = {"root_mean_squared_error":root_mean_squared_error})
+
+# model = tf.keras.models.load_model(os.path.join(checkpoint_dir, "20220925_efficientnetb0_6c"),
+#     custom_objects = {"root_mean_squared_error":root_mean_squared_error,
+#         'radam':radam,
+#         'ranger':ranger})
 
 # Helper functions to make predictions based on city and year.
 
@@ -159,7 +162,7 @@ requirements = []
 for i in product(cities, years):
     requirements.append(i)
 
-pred(model, requirements, IMG_SIZE= 128, shard= True, shard_size= 100, filename_prefix= "efficientnetb0_6c", array_tgt=False)
+pred(model, requirements, IMG_SIZE= 128, shard= True, shard_size= 100, filename_prefix= "unet_ext_pt4", array_tgt=True)
 
 # Can also rewrite this as a main function for running directly:
 # if '__name__' == '__main__':

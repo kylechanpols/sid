@@ -9,9 +9,9 @@ import sys, getopt
 os.chdir("F:/gis/github/v2/image_processing")
 base_path = os.getcwd()
 in_path = os.path.join(base_path, "raw_tifs/")
-city = "Beijing" # change this to different city names
+city = "Zaragoza" # change this to different city names
 multi_tiled = False # supports large multi-tiled geotiff
-gcs = True
+gcs = False
 
 out_path = os.path.join(base_path, "output/")
 
