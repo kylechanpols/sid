@@ -2,7 +2,7 @@
 
 Welcome to the GitHub repository for the Satellite Index of Development (SID) project. The GitHub repository serves as a repository for the latest build of code and Google Colab notebooks.
 
-## Stable Release
+## Release
 `v1` folder contains version 1.0 of the model. The v1 model makes use of the RGB layers of a satellite image to make predictions of the segmentation mask.
 
 ## Project Description
@@ -17,54 +17,62 @@ The model takes a distribution of satellite images, parses them through a U-Net 
 
 But it can take a distribution of unseen images of any dimension to make predictions.
 
-# Version 2 - 7-channel model (WIP)
+# Version 2 - 6-channel model
+
+The V2 models use a different training dataset (Landsat 8 time series). It has 6 channels, and the problem has been reformulated as a image regression problem. Instead of classifying pixels as built-up or not, I use the U-Net architecture to create an image regression model that guesses the value of the Normalized Difference Built-up Index (NDBI), or Urban Index for each pixel.
+
+A brief summary of the performance against an EfficientNet B0 Transfer Learning implementation is available below:
+
+| Model | Training RMSE | Testing RMSE | Correlation with Brookings 2014 Data^ |
+| ----- | ------------- | ------------ | ------------------------------------ |
+| U-Net | .071 | .098 | .486 |
+| EfficientNetB0 | .115 | .093 | .467
+| ----- | ------------- | ------------ | ------------------------------------ |
+Note: 
+*- EfficientNetB0 RMSE was reported at the image-level not pixel-level. These are estimates acquired by averaging the image-level RMSE by the size of the image (dividing by 128x128=16384)
+^- With the model predictions I computed the weighted coefficient of variation (Williamson, 1965) and tested the economic development predictions against the Brookings Institute 2014 city-level GDP data. This column reports the correlation between the model predictions against an existing dataset on city-level economic development.
 
 ## File Description
 
-### `data_loader.py`
-- This contains the `tf.data.Dataset` data pipeline and the preprocessing pipeline in one file.
+## File Description - Core Scripts
 
-## A note on model weights
-
-These are available on Google Drive as GitHub does not allow excessive large files. See the [entire shared folder here](https://drive.google.com/drive/folders/1m38V-wL2gPonnoeZtQYD3jBfLf0dbBth?usp=sharing).
-
-## File Description - Jupyter Notebooks
-
-### training_demo.ipynb
-
-The main demo for the project code and scripts, with an example of training and testing on the project's dataset of 4300 images.
-
-### training_demo_technical.ipynb
-
-The main demo notebook but with a detailed walkthrough of all helper functions written for this project.
-
-## File Description - Scripts
-
-### tf_setup.py
+### `tf_setup.py`
 
 Setup script for TensorFlow.
 
-### data_loader.py
+### `data_loader.py`
 
 Contains all helper functions for the data pipeline (for preprocessing images and parsing images for tf).
 
-### model_compile.py
+### `model_compile.py`
 
 Model Definition and Model Compilation.
 
-### pred.py
+### `prediction.py`
 
-An example routine for making predictions on unseen examples with the pre-trained model weights.
+An example routine for making predictions on unseen examples with the pre-trained model weights. Supports batch caching to prevent data loss upon prediction error.
 
-### traintestsplit.py
+### `build_index_batch.py`
 
-Functions to perform directory-level train-test split required for the model.
+Routine to convert image tile-level predictions to SID predictions at the city-year level.
 
-### move1lvup.py
+## File Description - Utilities
 
-A helper function to move all files in nested sub-directories to one single folder. This is required if you download Google Satellite Images with the Google Satellite Images Downloader.
+### `get_coords_osm_api.py`
 
+Program to extract city limits from the OpenStreetMaps API
 
+### `tif_read_batch.py`
+
+Program to read a .TIF image downloaded from the Google Earth API and split them into tiles in .npy
+
+### `google_earth_engine_extract_in_batch.js`
+
+Program to scrap Landsat 8 images using the Google Earth API.
+
+### `google_earth_engine_vis_ui.js`
+
+Program to visualize the NDBI band of Landsat 8 images on the Google Earth Online GUI.
 
 
 
