@@ -24,8 +24,6 @@ But it can take a distribution of unseen images of any dimension to make predict
 ### `data_loader.py`
 - This contains the `tf.data.Dataset` data pipeline and the preprocessing pipeline in one file.
 
-# Version 1 - RGB Model
-
 ## A note on model weights
 
 These are available on Google Drive as GitHub does not allow excessive large files. See the [entire shared folder here](https://drive.google.com/drive/folders/1m38V-wL2gPonnoeZtQYD3jBfLf0dbBth?usp=sharing).
