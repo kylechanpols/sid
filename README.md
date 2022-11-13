@@ -21,15 +21,22 @@ But it can take a distribution of unseen images of any dimension to make predict
 
 The V2 models use a different training dataset (Landsat 8 time series). It has 6 channels, and the problem has been reformulated as a image regression problem. Instead of classifying pixels as built-up or not, I use the U-Net architecture to create an image regression model that guesses the value of the Normalized Difference Built-up Index (NDBI), or Urban Index for each pixel.
 
+<img src="https://drive.google.com/uc?id=1buH_AyQ51jpy1qDKPtxHClv4alN0tD99" alt="NDBI"/>
+                                                                                                 
+The image below shows an example of model predictions: The upper image shows the source image, the lower left image shows the source NDBI band, and the lower right shows the model's predictions for the NDBI band.
+
+<img src="https://drive.google.com/uc?id=1Qgoq4oKRoguSRmqZuAICT-x8Cn5jAVH5" alt="NDBI"/>
+
 A brief summary of the performance against an EfficientNet B0 Transfer Learning implementation is available below:
 
 | Model | Training RMSE | Testing RMSE | Correlation with Brookings 2014 Data^ |
 | ----- | ------------- | ------------ | ------------------------------------ |
 | U-Net | .071 | .098 | .486 |
 | EfficientNetB0 | .115 | .093 | .467
-| ----- | ------------- | ------------ | ------------------------------------ |
+
 Note: 
 *- EfficientNetB0 RMSE was reported at the image-level not pixel-level. These are estimates acquired by averaging the image-level RMSE by the size of the image (dividing by 128x128=16384)
+
 ^- With the model predictions I computed the weighted coefficient of variation (Williamson, 1965) and tested the economic development predictions against the Brookings Institute 2014 city-level GDP data. This column reports the correlation between the model predictions against an existing dataset on city-level economic development.
 
 ## File Description
