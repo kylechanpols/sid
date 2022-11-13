@@ -3,7 +3,7 @@
 Welcome to the GitHub repository for the Satellite Index of Development (SID) project. The GitHub repository serves as a repository for the latest build of code and Google Colab notebooks.
 
 ## Stable Release
-`v1` folder contains version 1.0 of the model. The v1 model makes use of the RGB layers of a satellite image to make predictions of the segmentation mask.
+Please consult the [Project webpage](https://kylechanhy.netlify.app/project/sidv1/) for the stable version of the code and scripts.
 
 ## Project Description
 
@@ -16,13 +16,7 @@ The model takes a distribution of satellite images, parses them through a U-Net 
 <img src="https://drive.google.com/uc?id=1VMBxH81uwqydFm4BS1yOdftRTwy00E4R" alt="Rural" width="256"/>
 
 But it can take a distribution of unseen images of any dimension to make predictions.
-
-# Version 2 - 7-channel model (WIP)
-
-## File Description
-
-### `data_loader.py`
-- This contains the `tf.data.Dataset` data pipeline and the preprocessing pipeline in one file.
+<<<<<<< HEAD
 
 ## A note on model weights
 
