@@ -19,9 +19,9 @@ But it can take a distribution of unseen images of any dimension to make predict
 
 # Version 2 - 6-channel model
 
-The V2 models use a different training dataset (Landsat 8 time series). It has 6 channels, and the problem has been reformulated as a image regression problem. Instead of classifying pixels as built-up or not, I use the U-Net architecture to create an image regression model that guesses the value of the Normalized Difference Built-up Index (NDBI), or Urban Index for each pixel.
+The V2 models use a different training dataset (Landsat 8 time series). It has 6 channels, and the problem has been reformulated as a image regression problem. Instead of classifying pixels as built-up or not, I use the U-Net architecture to create an image regression model that guesses the value of the Normalized Difference Built-up Index (NDBI), or Urban Index for each pixel. The image below shows the example of vienna: the left panel shows the source image, and the right panel shows the NDBI band highlighting built-up areas within the city limits.
 
-<img src="https://drive.google.com/uc?id=1buH_AyQ51jpy1qDKPtxHClv4alN0tD99" alt="NDBI"/>
+<img src="https://drive.google.com/uc?id=1buH_AyQ51jpy1qDKPtxHClv4alN0tD99" alt="NDBI" width="512"/>
                                                                                                  
 The image below shows an example of model predictions: The upper image shows the source image, the lower left image shows the source NDBI band, and the lower right shows the model's predictions for the NDBI band.
 
@@ -32,7 +32,7 @@ A brief summary of the performance against an EfficientNet B0 Transfer Learning 
 | Model | Training RMSE | Testing RMSE | Correlation with Brookings 2014 Data^ |
 | ----- | ------------- | ------------ | ------------------------------------ |
 | U-Net | .071 | .098 | .486 |
-| EfficientNetB0 | .115 | .093 | .467
+| EfficientNetB0 | .115* | .093* | .467
 
 Note: 
 *- EfficientNetB0 RMSE was reported at the image-level not pixel-level. These are estimates acquired by averaging the image-level RMSE by the size of the image (dividing by 128x128=16384)
